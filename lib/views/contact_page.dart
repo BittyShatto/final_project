@@ -1,94 +1,95 @@
-import 'package:flutter/material.dart';
 import 'package:contacts_service/contacts_service.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter/material.dart';
 
 class ContactPage extends StatefulWidget {
-  ContactPage({Key? key, required this.title}) : super(key: key);
-
-  final String title;
+  const ContactPage({super.key});
 
   @override
-  _ContactPageState createState() => _ContactPageState();
+  State<ContactPage> createState() => _ContactPageState();
 }
 
 class _ContactPageState extends State<ContactPage> {
   List<Contact> contacts = [];
-  List<Contact> contactsFiltered = [];
   TextEditingController _searchController = TextEditingController();
 
   @override
-  void initState() {
-    super.initState();
-    getAllContacts();
-  }
-
-  getAllContacts() async {
-    List<Contact> _contacts = (await ContactsService.getContacts()).toList();
-    setState(() {
-      contacts = _contacts;
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
-    bool isSearching = _searchController.text.isNotEmpty;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
       ),
-      body: Container(
-        padding: EdgeInsets.all(20),
-        child: Column(
-          children: <Widget>[
-            Container(
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  labelText: 'Search',
-                  border: new OutlineInputBorder(
-                    borderSide: new BorderSide(
-                      color: Theme.of(context).primaryColor,
-                    ),
-                  ),
-                  prefixIcon: Icon(
-                    Icons.search,
-                    color: Theme.of(context).primaryColor,
-                  ),
-                ),
-              ),
-            ),
-            Expanded(
-              child: buildContactList(isSearching),
-            )
-          ],
+      home: Scaffold(
+        appBar: AppBar(
+          centerTitle: true,
+          title: const Text("Contact List"),
+        ),
+        body: Container(
+          height: double.infinity,
+          child: FutureBuilder(
+            future: getContacts(),
+            builder: (context, AsyncSnapshot<List<Contact>> snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Center(
+                  child: CircularProgressIndicator(),
+                );
+              } else if (snapshot.hasError) {
+                return Center(
+                  child: Text("Error: ${snapshot.error}"),
+                );
+              } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return Center(
+                  child: Text("No contacts available."),
+                );
+              } else {
+                return ListView.builder(
+                  itemCount: snapshot.data!.length,
+                  itemBuilder: (context, index) {
+                    Contact contact = snapshot.data![index];
+                    return ListTile(
+                      leading: const CircleAvatar(
+                        radius: 20,
+                        child: Icon(Icons.person),
+                      ),
+                      title: Text(contact.displayName ?? ""),
+                      subtitle: Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          if (contact.phones?.isNotEmpty == true)
+                            Text(contact.phones!.first.value ?? ""),
+                          if (contact.emails?.isNotEmpty == true)
+                            Text(contact.emails!.first.value ?? ""),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              }
+            },
+          ),
         ),
       ),
     );
   }
 
-  Widget buildContactList(bool isSearching) {
-    return ListView.builder(
-      shrinkWrap: true,
-      itemCount:
-          isSearching == true ? contactsFiltered.length : contacts.length,
-      itemBuilder: (context, index) {
-        Contact contact =
-            isSearching == true ? contactsFiltered[index] : contacts[index];
-        return ListTile(
-          title: Text(contact.displayName ?? 'No Name'),
-          subtitle: Text(
-            contact.phones?.isNotEmpty == true
-                ? contact.phones!.first.value ?? 'No Phone'
-                : 'No Phone',
-          ),
-          leading: (contact.avatar != null && contact.avatar!.length > 0)
-              ? CircleAvatar(
-                  backgroundImage: MemoryImage(contact.avatar!),
-                )
-              : CircleAvatar(
-                  child: Text(contact.initials()),
-                ),
-        );
-      },
-    );
+  Future<List<Contact>> getContacts() async {
+    bool isGranted = await Permission.contacts.status.isGranted;
+    if (!isGranted) {
+      PermissionStatus status = await Permission.contacts.request();
+      if (status.isDenied || status.isPermanentlyDenied) {
+        // Handle denied permission, e.g., show a message or navigate to settings
+        return [];
+      }
+      isGranted = status.isGranted;
+    }
+    if (isGranted) {
+      return await ContactsService.getContacts();
+    }
+    return [];
   }
+}
+
+void main() {
+  runApp(ContactPage());
 }

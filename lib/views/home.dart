@@ -1,4 +1,4 @@
-import 'package:contacts_service/contacts_service.dart';
+import 'package:fast_contacts/fast_contacts.dart';
 import 'package:final_project/controllers/auth_services.dart';
 import 'package:final_project/views/contact_page.dart';
 import 'package:final_project/views/whatsapp_page.dart';
@@ -31,12 +31,8 @@ class _HomepageState extends State<Homepage> {
             title: 'Launch Phone Number',
             icon: Icons.phone,
             onPressed: () {
-              Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => ContactPage(
-                            title: 'Contact Page',
-                          )));
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => ContactPage()));
             },
           ),
           launchButton(
