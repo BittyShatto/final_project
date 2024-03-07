@@ -8,7 +8,6 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'firebase_options.dart';
 
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
@@ -32,7 +31,7 @@ class MyApp extends StatelessWidget {
       ),
       routes: {
         "/": (context) => CheckUser(),
-        "/home": (context) => Homepage(),
+        "/home": (context) => MyContactsPage(),
         "/signup": (context) => SignUpPage(),
         "/login": (context) => LoginPage(),
       },

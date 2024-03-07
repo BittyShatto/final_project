@@ -1,112 +1,230 @@
-import 'package:fast_contacts/fast_contacts.dart';
 import 'package:final_project/controllers/auth_services.dart';
-import 'package:final_project/views/contact_page.dart';
-import 'package:final_project/views/whatsapp_page.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher_android/url_launcher_android.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:contacts_service/contacts_service.dart';
+import 'package:permission_handler/permission_handler.dart';
 
-class Homepage extends StatefulWidget {
-  const Homepage({super.key});
-
-  @override
-  State<Homepage> createState() => _HomepageState();
+void main() {
+  runApp(MyApp());
 }
 
-class _HomepageState extends State<Homepage> {
-  List<Contact> contacts = [];
-  List<Contact> contactsFiltered = [];
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Flutter Demo',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: AuthenticationWrapper(),
+    );
+  }
+}
 
+class AuthenticationWrapper extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return CircularProgressIndicator();
+        } else if (snapshot.hasError) {
+          return Scaffold(
+            body: Center(
+              child: Text('Error: ${snapshot.error}'),
+            ),
+          );
+        } else if (snapshot.hasData && snapshot.data != null) {
+          // User is authenticated, show contacts page
+          return MyContactsPage();
+        } else {
+          // User is not authenticated, show login page
+          return MyLoginPage();
+        }
+      },
+    );
+  }
+}
+
+class MyLoginPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Home Page"),
-        backgroundColor: Colors.blue,
+        title: Text('Login Page'),
       ),
-      body: SingleChildScrollView(
+      body: Center(
+        child: ElevatedButton(
+          onPressed: () async {
+            // Replace this with your authentication logic
+            await FirebaseAuth.instance.signInAnonymously();
+          },
+          child: Text('Log in anonymously'),
+        ),
+      ),
+    );
+  }
+}
+
+class MyContactsPage extends StatefulWidget {
+  @override
+  _MyContactsPageState createState() => _MyContactsPageState();
+}
+
+class _MyContactsPageState extends State<MyContactsPage> {
+  List<Contact> contacts = [];
+  List<Contact> contactsFiltered = [];
+  TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    getContacts();
+  }
+
+  Future<void> getContacts() async {
+    bool isGranted = await Permission.contacts.status.isGranted;
+    if (!isGranted) {
+      PermissionStatus status = await Permission.contacts.request();
+      if (status.isDenied || status.isPermanentlyDenied) {
+        // Handle denied permission, e.g., show a message or navigate to settings
+        return;
+      }
+      isGranted = status.isGranted;
+    }
+    if (isGranted) {
+      List<Contact> _contacts = (await ContactsService.getContacts()).toList();
+      setState(() {
+        contacts = _contacts;
+        contactsFiltered = _contacts;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    bool isSearching = _searchController.text.isNotEmpty;
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Flutter Contacts'),
+      ),
+      drawer: MyDrawer(logoutCallback: () {
+        FirebaseAuth.instance.signOut();
+      }),
+      body: Container(
         padding: EdgeInsets.all(20),
-        child: Column(children: [
-          launchButton(
-            title: 'Launch Phone Number',
-            icon: Icons.phone,
-            onPressed: () {
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (context) => ContactPage()));
-            },
-          ),
-          launchButton(
-            title: 'Launch Whatsapp',
-            icon: Icons.language,
-            onPressed: () {
-              {
-                openWhatsApp(context);
-              }
-            },
-          ),
-        ]),
-      ),
-      drawer: Drawer(
-        child: ListView(
-          children: [
-            DrawerHeader(
-                child: Column(
-              mainAxisAlignment: MainAxisAlignment.end,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                CircleAvatar(
-                  maxRadius: 32,
-                  child: Text(FirebaseAuth.instance.currentUser!.email
-                      .toString()[0]
-                      .toUpperCase()),
+        child: Column(
+          children: <Widget>[
+            Container(
+              child: TextField(
+                controller: _searchController,
+                onChanged: (value) {
+                  filterContacts(value);
+                },
+                decoration: InputDecoration(
+                  labelText: 'Search',
+                  border: OutlineInputBorder(
+                    borderSide: BorderSide(
+                      color: Theme.of(context).primaryColor,
+                    ),
+                  ),
+                  prefixIcon: Icon(
+                    Icons.search,
+                    color: Theme.of(context).primaryColor,
+                  ),
                 ),
-                SizedBox(
-                  height: 10,
-                ),
-                Text(FirebaseAuth.instance.currentUser!.email.toString())
-              ],
-            )),
-            ListTile(
-              onTap: () {
-                AuthService().logout();
-                ScaffoldMessenger.of(context)
-                    .showSnackBar(SnackBar(content: Text("Logged Out")));
-                Navigator.pushReplacementNamed(context, "/login");
-              },
-              leading: Icon(Icons.logout_outlined),
-              title: Text("Logout"),
-            )
+              ),
+            ),
+            Expanded(
+              child: buildContactList(isSearching),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget launchButton({
-    required String title,
-    required IconData icon,
-    required Function() onPressed,
-  }) {
-    return Container(
-      height: 45,
-      margin: const EdgeInsets.symmetric(vertical: 10),
-      child: ElevatedButton(
-        style: ButtonStyle(
-            backgroundColor: MaterialStateProperty.all(Colors.blue)),
-        onPressed: onPressed,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon),
-            const SizedBox(
-              width: 20,
+  Widget buildContactList(bool isSearching) {
+    return ListView.builder(
+      shrinkWrap: true,
+      itemCount: isSearching ? contactsFiltered.length : contacts.length,
+      itemBuilder: (context, index) {
+        Contact contact =
+            isSearching ? contactsFiltered[index] : contacts[index];
+        return ListTile(
+          title: Text(contact.displayName ?? 'No Name'),
+          subtitle: Text(
+            contact.phones?.isNotEmpty == true
+                ? contact.phones!.first.value ?? 'No Phone'
+                : 'No Phone',
+          ),
+          leading: (contact.avatar != null && contact.avatar!.isNotEmpty)
+              ? CircleAvatar(
+                  backgroundImage: MemoryImage(contact.avatar!),
+                )
+              : CircleAvatar(
+                  child: Text(contact.initials()),
+                ),
+        );
+      },
+    );
+  }
+
+  void filterContacts(String query) {
+    setState(() {
+      contactsFiltered = contacts
+          .where((contact) =>
+              contact.displayName
+                  ?.toLowerCase()
+                  .contains(query.toLowerCase()) ??
+              false)
+          .toList();
+    });
+  }
+}
+
+class MyDrawer extends StatelessWidget {
+  final VoidCallback logoutCallback;
+
+  const MyDrawer({Key? key, required this.logoutCallback}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          DrawerHeader(
+            decoration: BoxDecoration(
+              color: Colors.blue,
             ),
-            Text(
-              title,
-              style: TextStyle(fontSize: 16),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CircleAvatar(
+                  maxRadius: 32,
+                  child: Text(
+                    FirebaseAuth.instance.currentUser!.email![0].toUpperCase(),
+                  ),
+                ),
+                SizedBox(height: 10),
+                Text(FirebaseAuth.instance.currentUser!.email!),
+              ],
             ),
-          ],
-        ),
+          ),
+          ListTile(
+            onTap: () {
+              AuthService().logout();
+              ScaffoldMessenger.of(context)
+                  .showSnackBar(SnackBar(content: Text("Logged Out")));
+              Navigator.pushReplacementNamed(context, "/login");
+            },
+            leading: Icon(Icons.logout_outlined),
+            title: Text("Logout"),
+          )
+        ],
       ),
     );
   }
