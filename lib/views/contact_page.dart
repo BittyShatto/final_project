@@ -43,6 +43,10 @@ class _ContactPageState extends State<ContactPage> {
                   child: Text("No contacts available."),
                 );
               } else {
+                // Sort the contacts based on display name
+                snapshot.data!.sort((a, b) =>
+                    (a.displayName ?? "").compareTo(b.displayName ?? ""));
+
                 return ListView.builder(
                   itemCount: snapshot.data!.length,
                   itemBuilder: (context, index) {
@@ -54,12 +58,12 @@ class _ContactPageState extends State<ContactPage> {
                       ),
                       title: Text(contact.displayName ?? ""),
                       subtitle: Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           if (contact.phones?.isNotEmpty == true)
-                            Text(contact.phones!.first.value ?? ""),
+                            Text("Phone: ${contact.phones!.first.value ?? ""}"),
                           if (contact.emails?.isNotEmpty == true)
-                            Text(contact.emails!.first.value ?? ""),
+                            Text("Email: ${contact.emails!.first.value ?? ""}"),
                         ],
                       ),
                     );
