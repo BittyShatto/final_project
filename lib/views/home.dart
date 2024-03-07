@@ -1,8 +1,11 @@
 import 'package:final_project/controllers/auth_services.dart';
+import 'package:final_project/views/whatsapp.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:contacts_service/contacts_service.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 
 void main() {
   runApp(MyApp());
@@ -12,7 +15,6 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
@@ -166,6 +168,41 @@ class _MyContactsPageState extends State<MyContactsPage> {
               : CircleAvatar(
                   child: Text(contact.initials()),
                 ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: Icon(Icons.sms),
+                onPressed: () async {
+                  String smsurl = "sms:6238021161?body=hloo";
+                  if (await canLaunchUrlString(smsurl)) {
+                    launchUrlString(smsurl);
+                  } else {
+                    print("Can't launch $smsurl");
+                  }
+                },
+              ),
+              IconButton(
+                icon: Icon(Icons.call),
+                onPressed: () async {
+                  String telurl = "tel:9188278975";
+                  if (await canLaunchUrlString(telurl)) {
+                    launchUrlString(telurl);
+                  } else {
+                    print("Can't launch $telurl");
+                  }
+                },
+              ),
+              IconButton(
+                icon: Icon(Icons.message),
+                onPressed: () {
+                  {
+                    openWhatsApp(context);
+                  }
+                },
+              ),
+            ],
+          ),
         );
       },
     );
@@ -221,9 +258,9 @@ class MyDrawer extends StatelessWidget {
                   .showSnackBar(SnackBar(content: Text("Logged Out")));
               Navigator.pushReplacementNamed(context, "/login");
             },
-            leading: Icon(Icons.logout_outlined),
+            leading: Icon(Icons.logout),
             title: Text("Logout"),
-          )
+          ),
         ],
       ),
     );
