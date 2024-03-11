@@ -7,6 +7,9 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
+import 'calllog_page.dart';
+import 'contactdetails_page.dart';
+
 void main() {
   runApp(MyApp());
 }
@@ -110,6 +113,16 @@ class _MyContactsPageState extends State<MyContactsPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Flutter Contacts'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.history),
+            onPressed: () {
+              {
+                CalllogApp();
+              }
+            },
+          ),
+        ],
       ),
       drawer: MyDrawer(logoutCallback: () {
         FirebaseAuth.instance.signOut();
@@ -154,54 +167,64 @@ class _MyContactsPageState extends State<MyContactsPage> {
       itemBuilder: (context, index) {
         Contact contact =
             isSearching ? contactsFiltered[index] : contacts[index];
-        return ListTile(
-          title: Text(contact.displayName ?? 'No Name'),
-          subtitle: Text(
-            contact.phones?.isNotEmpty == true
-                ? contact.phones!.first.value ?? 'No Phone'
-                : 'No Phone',
-          ),
-          leading: (contact.avatar != null && contact.avatar!.isNotEmpty)
-              ? CircleAvatar(
-                  backgroundImage: MemoryImage(contact.avatar!),
-                )
-              : CircleAvatar(
-                  child: Text(contact.initials()),
+        return GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ContactDetailsPage(contact: contact),
+              ),
+            );
+          },
+          child: ListTile(
+            title: Text(contact.displayName ?? 'No Name'),
+            subtitle: Text(
+              contact.phones?.isNotEmpty == true
+                  ? contact.phones!.first.value ?? 'No Phone'
+                  : 'No Phone',
+            ),
+            leading: (contact.avatar != null && contact.avatar!.isNotEmpty)
+                ? CircleAvatar(
+                    backgroundImage: MemoryImage(contact.avatar!),
+                  )
+                : CircleAvatar(
+                    child: Text(contact.initials()),
+                  ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: Icon(Icons.sms),
+                  onPressed: () async {
+                    String smsurl = "sms:6238021161?body=hloo";
+                    if (await canLaunchUrlString(smsurl)) {
+                      launchUrlString(smsurl);
+                    } else {
+                      print("Can't launch $smsurl");
+                    }
+                  },
                 ),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                icon: Icon(Icons.sms),
-                onPressed: () async {
-                  String smsurl = "sms:6238021161?body=hloo";
-                  if (await canLaunchUrlString(smsurl)) {
-                    launchUrlString(smsurl);
-                  } else {
-                    print("Can't launch $smsurl");
-                  }
-                },
-              ),
-              IconButton(
-                icon: Icon(Icons.call),
-                onPressed: () async {
-                  String telurl = "tel:9188278975";
-                  if (await canLaunchUrlString(telurl)) {
-                    launchUrlString(telurl);
-                  } else {
-                    print("Can't launch $telurl");
-                  }
-                },
-              ),
-              IconButton(
-                icon: Icon(Icons.message),
-                onPressed: () {
-                  {
-                    openWhatsApp(context);
-                  }
-                },
-              ),
-            ],
+                IconButton(
+                  icon: Icon(Icons.call),
+                  onPressed: () async {
+                    String telurl = "tel:9188278975";
+                    if (await canLaunchUrlString(telurl)) {
+                      launchUrlString(telurl);
+                    } else {
+                      print("Can't launch $telurl");
+                    }
+                  },
+                ),
+                IconButton(
+                  icon: Icon(Icons.message),
+                  onPressed: () {
+                    {
+                      openWhatsApp(context);
+                    }
+                  },
+                ),
+              ],
+            ),
           ),
         );
       },
