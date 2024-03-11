@@ -7,7 +7,6 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
-import 'calllog_page.dart';
 import 'contactdetails_page.dart';
 
 void main() {
@@ -116,9 +115,18 @@ class _MyContactsPageState extends State<MyContactsPage> {
         actions: [
           IconButton(
             icon: Icon(Icons.history),
-            onPressed: () {
-              {
-                CalllogApp();
+            onPressed: () async {
+              // Implement call logs functionality
+              try {
+                // Example: Open the default phone dialer app
+                String url = 'tel:';
+                if (await canLaunch(url)) {
+                  await launch(url);
+                } else {
+                  throw 'Could not launch $url';
+                }
+              } catch (e) {
+                print('Error launching call logs: $e');
               }
             },
           ),
@@ -195,13 +203,8 @@ class _MyContactsPageState extends State<MyContactsPage> {
               children: [
                 IconButton(
                   icon: Icon(Icons.sms),
-                  onPressed: () async {
-                    String smsurl = "sms:6238021161?body=hloo";
-                    if (await canLaunchUrlString(smsurl)) {
-                      launchUrlString(smsurl);
-                    } else {
-                      print("Can't launch $smsurl");
-                    }
+                  onPressed: () {
+                    launch('sms:+919188278975?body=Hloo');
                   },
                 ),
                 IconButton(
