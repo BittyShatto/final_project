@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 openWhatsApp(BuildContext context) async {
-  var whatsapp = "+916238021161";
+  var whatsapp = "+919188278975";
   var whatsappWebURL =
       "https://web.whatsapp.com/send?phone=$whatsapp&text=${Uri.parse("hello Dona!What are you doing")}";
   var whatsappURL_android =
