@@ -177,6 +177,7 @@ class _MyContactsPageState extends State<MyContactsPage> {
             isSearching ? contactsFiltered[index] : contacts[index];
         return GestureDetector(
           onTap: () {
+            // Handle contact tap, navigate to details page
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -184,50 +185,62 @@ class _MyContactsPageState extends State<MyContactsPage> {
               ),
             );
           },
-          child: ListTile(
-            title: Text(contact.displayName ?? 'No Name'),
-            subtitle: Text(
-              contact.phones?.isNotEmpty == true
-                  ? contact.phones!.first.value ?? 'No Phone'
-                  : 'No Phone',
+          child: ExpansionTile(
+            title: ListTile(
+              title: Text(contact.displayName ?? 'No Name'),
+              subtitle: Text(
+                contact.phones?.isNotEmpty == true
+                    ? contact.phones!.first.value ?? 'No Phone'
+                    : 'No Phone',
+              ),
+              leading: (contact.avatar != null && contact.avatar!.isNotEmpty)
+                  ? CircleAvatar(
+                      backgroundImage: MemoryImage(contact.avatar!),
+                    )
+                  : CircleAvatar(
+                      child: Text(contact.initials()),
+                    ),
             ),
-            leading: (contact.avatar != null && contact.avatar!.isNotEmpty)
-                ? CircleAvatar(
-                    backgroundImage: MemoryImage(contact.avatar!),
-                  )
-                : CircleAvatar(
-                    child: Text(contact.initials()),
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  Expanded(
+                    child: IconButton(
+                      icon: Icon(Icons.sms),
+                      onPressed: () {
+                        // Handle SMS button press
+                        launch('sms:+919188278975?body=Hello');
+                      },
+                    ),
                   ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: Icon(Icons.sms),
-                  onPressed: () {
-                    launch('sms:+919188278975?body=Hloo');
-                  },
-                ),
-                IconButton(
-                  icon: Icon(Icons.call),
-                  onPressed: () async {
-                    String telurl = "tel:9188278975";
-                    if (await canLaunchUrlString(telurl)) {
-                      launchUrlString(telurl);
-                    } else {
-                      print("Can't launch $telurl");
-                    }
-                  },
-                ),
-                IconButton(
-                  icon: Icon(Icons.message),
-                  onPressed: () {
-                    {
-                      openWhatsApp(context);
-                    }
-                  },
-                ),
-              ],
-            ),
+                  Expanded(
+                    child: IconButton(
+                      icon: Icon(Icons.call),
+                      onPressed: () async {
+                        // Handle call button press
+                        String telurl = "tel:9188278975";
+                        if (await canLaunchUrlString(telurl)) {
+                          launchUrlString(telurl);
+                        } else {
+                          print("Can't launch $telurl");
+                        }
+                      },
+                    ),
+                  ),
+                  Expanded(
+                    child: IconButton(
+                      icon: Icon(Icons.message),
+                      onPressed: () {
+                        // Handle message button press
+                        openWhatsApp(context);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         );
       },
