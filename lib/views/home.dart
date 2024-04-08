@@ -1,4 +1,3 @@
-import 'package:final_project/controllers/auth_services.dart';
 import 'package:final_project/views/whatsapp.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -6,7 +5,6 @@ import 'package:contacts_service/contacts_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:url_launcher/url_launcher_string.dart';
-
 import 'contactdetails_page.dart';
 
 void main() {
@@ -132,9 +130,6 @@ class _MyContactsPageState extends State<MyContactsPage> {
           ),
         ],
       ),
-      drawer: MyDrawer(logoutCallback: () {
-        FirebaseAuth.instance.signOut();
-      }),
       body: Container(
         padding: EdgeInsets.all(20),
         child: Column(
@@ -200,6 +195,19 @@ class _MyContactsPageState extends State<MyContactsPage> {
                   : CircleAvatar(
                       child: Text(contact.initials()),
                     ),
+              trailing: IconButton(
+                icon: Icon(Icons.info_outline),
+                onPressed: () {
+                  // Handle contact details button press
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          ContactDetailsPage(contact: contact),
+                    ),
+                  );
+                },
+              ),
             ),
             children: [
               Row(
@@ -257,51 +265,5 @@ class _MyContactsPageState extends State<MyContactsPage> {
               false)
           .toList();
     });
-  }
-}
-
-class MyDrawer extends StatelessWidget {
-  final VoidCallback logoutCallback;
-
-  const MyDrawer({Key? key, required this.logoutCallback}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          DrawerHeader(
-            decoration: BoxDecoration(
-              color: Colors.blue,
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.end,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                CircleAvatar(
-                  maxRadius: 32,
-                  child: Text(
-                    FirebaseAuth.instance.currentUser!.email![0].toUpperCase(),
-                  ),
-                ),
-                SizedBox(height: 10),
-                Text(FirebaseAuth.instance.currentUser!.email!),
-              ],
-            ),
-          ),
-          ListTile(
-            onTap: () {
-              AuthService().logout();
-              ScaffoldMessenger.of(context)
-                  .showSnackBar(SnackBar(content: Text("Logged Out")));
-              Navigator.pushReplacementNamed(context, "/login");
-            },
-            leading: Icon(Icons.logout),
-            title: Text("Logout"),
-          ),
-        ],
-      ),
-    );
   }
 }
