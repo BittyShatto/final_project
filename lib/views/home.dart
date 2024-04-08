@@ -78,6 +78,8 @@ class _MyContactsPageState extends State<MyContactsPage> {
   List<Contact> contacts = [];
   List<Contact> contactsFiltered = [];
   TextEditingController _searchController = TextEditingController();
+  TextEditingController _messageController =
+      TextEditingController(); // Add message controller
 
   @override
   void initState() {
@@ -154,6 +156,15 @@ class _MyContactsPageState extends State<MyContactsPage> {
                 ),
               ),
             ),
+            SizedBox(height: 20), // Add some space
+            TextField(
+              // Add TextField for message input
+              controller: _messageController,
+              decoration: InputDecoration(
+                labelText: 'Enter Message',
+                border: OutlineInputBorder(),
+              ),
+            ),
             Expanded(
               child: buildContactList(isSearching),
             ),
@@ -219,7 +230,8 @@ class _MyContactsPageState extends State<MyContactsPage> {
                       icon: Icon(Icons.sms),
                       onPressed: () {
                         // Handle SMS button press
-                        launch('sms:+919188278975?body=Hello');
+                        launch(
+                            'sms:+919188278975?body=${_messageController.text}');
                       },
                     ),
                   ),
@@ -242,7 +254,7 @@ class _MyContactsPageState extends State<MyContactsPage> {
                       icon: Icon(Icons.message),
                       onPressed: () {
                         // Handle message button press
-                        openWhatsApp(context);
+                        openWhatsApp(context, _messageController.text);
                       },
                     ),
                   ),

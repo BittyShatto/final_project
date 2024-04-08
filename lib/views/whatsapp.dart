@@ -3,12 +3,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-openWhatsApp(BuildContext context) async {
-  var whatsapp = "+919188278975";
+openWhatsApp(BuildContext context, String message) async {
+  var whatsapp = "+919747727283";
   var whatsappWebURL =
-      "https://web.whatsapp.com/send?phone=$whatsapp&text=${Uri.parse("hello Dona!What are you doing")}";
+      "https://web.whatsapp.com/send?phone=$whatsapp&text=${Uri.parse(message)}";
   var whatsappURL_android =
-      "http://api.whatsapp.com/send?phone=$whatsapp&text=hello Dona!What are you doing";
+      "http://api.whatsapp.com/send?phone=$whatsapp&text=$message";
 
   try {
     if (Platform.isIOS) {
