@@ -1,11 +1,17 @@
+import 'dart:ui';
+
+import 'package:final_project/controllers/auth_services.dart';
+import 'package:final_project/views/contactdetails_page.dart';
 import 'package:final_project/views/whatsapp.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:contacts_service/contacts_service.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:url_launcher/url_launcher_string.dart';
-import 'contactdetails_page.dart';
 
 void main() {
   runApp(MyApp());
@@ -78,8 +84,6 @@ class _MyContactsPageState extends State<MyContactsPage> {
   List<Contact> contacts = [];
   List<Contact> contactsFiltered = [];
   TextEditingController _searchController = TextEditingController();
-  TextEditingController _messageController =
-      TextEditingController(); // Add message controller
 
   @override
   void initState() {
@@ -130,8 +134,18 @@ class _MyContactsPageState extends State<MyContactsPage> {
               }
             },
           ),
+          IconButton(
+            icon: Icon(Icons.add), // Use the Icons.add for adding contacts
+            onPressed: () {
+              // Implement adding contacts functionality
+              // You can add your logic here to handle adding contacts
+            },
+          ),
         ],
       ),
+      drawer: MyDrawer(logoutCallback: () {
+        FirebaseAuth.instance.signOut();
+      }),
       body: Container(
         padding: EdgeInsets.all(20),
         child: Column(
@@ -156,15 +170,6 @@ class _MyContactsPageState extends State<MyContactsPage> {
                 ),
               ),
             ),
-            SizedBox(height: 20), // Add some space
-            TextField(
-              // Add TextField for message input
-              controller: _messageController,
-              decoration: InputDecoration(
-                labelText: 'Enter Message',
-                border: OutlineInputBorder(),
-              ),
-            ),
             Expanded(
               child: buildContactList(isSearching),
             ),
@@ -182,85 +187,106 @@ class _MyContactsPageState extends State<MyContactsPage> {
         Contact contact =
             isSearching ? contactsFiltered[index] : contacts[index];
         return GestureDetector(
-          onTap: () {
-            // Handle contact tap, navigate to details page
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ContactDetailsPage(contact: contact),
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+                horizontal: 5), // Adjust the horizontal padding as needed
+            child: ExpansionTile(
+              title: ListTile(
+                title: Text(
+                  contact.displayName ?? 'No Name',
+                  maxLines:
+                      1, // Set maxLines to 1 to ensure the name is displayed on a single line
+                  overflow:
+                      TextOverflow.ellipsis, // Handle overflow with ellipsis
+                ),
+                subtitle: Text(
+                  contact.phones?.isNotEmpty == true
+                      ? contact.phones!.first.value ?? 'No Phone'
+                      : 'No Phone',
+                  maxLines:
+                      1, // Set maxLines to 1 to ensure the phone number is displayed on a single line
+                  overflow:
+                      TextOverflow.ellipsis, // Handle overflow with ellipsis
+                ),
+                leading: (contact.avatar != null && contact.avatar!.isNotEmpty)
+                    ? CircleAvatar(
+                        backgroundImage: MemoryImage(contact.avatar!),
+                      )
+                    : CircleAvatar(
+                        child: Text(contact.initials()),
+                      ),
+                contentPadding: EdgeInsets.zero, // Remove default padding
               ),
-            );
-          },
-          child: ExpansionTile(
-            title: ListTile(
-              title: Text(contact.displayName ?? 'No Name'),
-              subtitle: Text(
-                contact.phones?.isNotEmpty == true
-                    ? contact.phones!.first.value ?? 'No Phone'
-                    : 'No Phone',
-              ),
-              leading: (contact.avatar != null && contact.avatar!.isNotEmpty)
-                  ? CircleAvatar(
-                      backgroundImage: MemoryImage(contact.avatar!),
-                    )
-                  : CircleAvatar(
-                      child: Text(contact.initials()),
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    Expanded(
+                      child: IconButton(
+                        icon: Icon(Icons.sms),
+                        onPressed: () {
+                          // Handle SMS button press
+                          launch('sms:+919747727283?body=Hello');
+                        },
+                      ),
                     ),
-              trailing: IconButton(
-                icon: Icon(Icons.info_outline),
-                onPressed: () {
-                  // Handle contact details button press
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          ContactDetailsPage(contact: contact),
+                    Expanded(
+                      child: IconButton(
+                        icon: Icon(Icons.call),
+                        onPressed: () async {
+                          // Handle call button press
+                          String telurl = "tel:9747727283";
+                          if (await canLaunchUrlString(telurl)) {
+                            launchUrlString(telurl);
+                          } else {
+                            print("Can't launch $telurl");
+                          }
+                        },
+                      ),
                     ),
-                  );
-                },
-              ),
+                    Expanded(
+                      child: IconButton(
+                        icon: ImageIcon(
+                          AssetImage('assets/images/whatsapp.png'),
+                          size: 24,
+                        ),
+                        onPressed: () {
+                          // Display the MessageDialog as a dialog box
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return MessageDialog(
+                                onSendMessage: (message) {
+                                  // Handle sending the message
+                                  openWhatsApp(context,
+                                      message); // Call openWhatsApp function here
+                                },
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                    Expanded(
+                      child: IconButton(
+                        icon: Icon(Icons.info),
+                        onPressed: () {
+                          // Navigate to ContactDetailsPage
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  ContactDetailsPage(contact: contact),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  Expanded(
-                    child: IconButton(
-                      icon: Icon(Icons.sms),
-                      onPressed: () {
-                        // Handle SMS button press
-                        launch(
-                            'sms:+919188278975?body=${_messageController.text}');
-                      },
-                    ),
-                  ),
-                  Expanded(
-                    child: IconButton(
-                      icon: Icon(Icons.call),
-                      onPressed: () async {
-                        // Handle call button press
-                        String telurl = "tel:9188278975";
-                        if (await canLaunchUrlString(telurl)) {
-                          launchUrlString(telurl);
-                        } else {
-                          print("Can't launch $telurl");
-                        }
-                      },
-                    ),
-                  ),
-                  Expanded(
-                    child: IconButton(
-                      icon: Icon(Icons.message),
-                      onPressed: () {
-                        // Handle message button press
-                        openWhatsApp(context, _messageController.text);
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ],
           ),
         );
       },
@@ -277,5 +303,51 @@ class _MyContactsPageState extends State<MyContactsPage> {
               false)
           .toList();
     });
+  }
+}
+
+class MyDrawer extends StatelessWidget {
+  final VoidCallback logoutCallback;
+
+  const MyDrawer({Key? key, required this.logoutCallback}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          DrawerHeader(
+            decoration: BoxDecoration(
+              color: Colors.blue,
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CircleAvatar(
+                  maxRadius: 32,
+                  child: Text(
+                    FirebaseAuth.instance.currentUser!.email![0].toUpperCase(),
+                  ),
+                ),
+                SizedBox(height: 10),
+                Text(FirebaseAuth.instance.currentUser!.email!),
+              ],
+            ),
+          ),
+          ListTile(
+            onTap: () {
+              AuthService().logout();
+              ScaffoldMessenger.of(context)
+                  .showSnackBar(SnackBar(content: Text("Logged Out")));
+              Navigator.pushReplacementNamed(context, "/login");
+            },
+            leading: Icon(Icons.logout),
+            title: Text("Logout"),
+          ),
+        ],
+      ),
+    );
   }
 }

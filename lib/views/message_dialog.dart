@@ -1,34 +1,4 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
-
-void openWhatsApp(BuildContext context, String message) async {
-  var whatsapp = "+919747727283";
-  var whatsappWebURL =
-      "https://web.whatsapp.com/send?phone=$whatsapp&text=${Uri.parse(message)}";
-  var whatsappURL_android =
-      "http://api.whatsapp.com/send?phone=$whatsapp&text=${Uri.parse(message)}";
-
-  try {
-    if (Platform.isIOS) {
-      if (await canLaunch(whatsappWebURL)) {
-        await launch(whatsappWebURL);
-      } else {
-        throw 'Could not launch $whatsappWebURL';
-      }
-    } else {
-      if (await canLaunch(whatsappURL_android)) {
-        await launch(whatsappURL_android);
-      } else {
-        throw 'Could not launch $whatsappURL_android';
-      }
-    }
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Error: $e")),
-    );
-  }
-}
 
 class MessageDialog extends StatefulWidget {
   final Function(String) onSendMessage;
@@ -62,7 +32,7 @@ class _MessageDialogState extends State<MessageDialog> {
           onPressed: () {
             String message = _messageController.text.trim();
             if (message.isNotEmpty) {
-              openWhatsApp(context, message); // Use the openWhatsApp function
+              widget.onSendMessage(message);
             }
             Navigator.of(context).pop(); // Close the dialog
           },
