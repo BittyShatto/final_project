@@ -118,6 +118,14 @@ class _MyContactsPageState extends State<MyContactsPage> {
         title: Text('Flutter Contacts'),
         actions: [
           IconButton(
+            icon:
+                Icon(Icons.person_add), // Use the Icons.add for adding contacts
+            onPressed: () {
+              // Implement adding contacts functionality
+              // You can add your logic here to handle adding contacts
+            },
+          ),
+          IconButton(
             icon: Icon(Icons.history),
             onPressed: () async {
               // Implement call logs functionality
@@ -132,13 +140,6 @@ class _MyContactsPageState extends State<MyContactsPage> {
               } catch (e) {
                 print('Error launching call logs: $e');
               }
-            },
-          ),
-          IconButton(
-            icon: Icon(Icons.add), // Use the Icons.add for adding contacts
-            onPressed: () {
-              // Implement adding contacts functionality
-              // You can add your logic here to handle adding contacts
             },
           ),
         ],
@@ -248,7 +249,7 @@ class _MyContactsPageState extends State<MyContactsPage> {
                     Expanded(
                       child: IconButton(
                         icon: ImageIcon(
-                          AssetImage('assets/images/whatsapp.png'),
+                          AssetImage("images/WhatsApplogo.png"),
                           size: 24,
                         ),
                         onPressed: () {
