@@ -232,7 +232,8 @@ class _MyContactsPageState extends State<MyContactsPage> {
                         icon: Icon(Icons.sms),
                         onPressed: () {
                           // Handle SMS button press
-                          launch('sms:+919747727283?body=Hello');
+                          launch(
+                              'sms:${contact.phones!.first.value}?body=Hello');
                         },
                       ),
                     ),
@@ -241,7 +242,7 @@ class _MyContactsPageState extends State<MyContactsPage> {
                         icon: Icon(Icons.call),
                         onPressed: () async {
                           // Handle call button press
-                          String telurl = "tel:9747727283";
+                          String telurl = "tel:${contact.phones!.first.value}";
                           if (await canLaunchUrlString(telurl)) {
                             launchUrlString(telurl);
                           } else {
