@@ -1,14 +1,14 @@
 import 'dart:ui';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:final_project/controllers/auth_services.dart';
+import 'package:final_project/controllers/crud_services.dart';
+import 'package:final_project/views/add_contact_page.dart';
 import 'package:final_project/views/contactdetails_page.dart';
 import 'package:final_project/views/whatsapp.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:contacts_service/contacts_service.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:url_launcher/url_launcher_string.dart';
@@ -122,7 +122,11 @@ class _MyContactsPageState extends State<MyContactsPage> {
                 Icon(Icons.person_add), // Use the Icons.add for adding contacts
             onPressed: () {
               // Implement adding contacts functionality
-              // You can add your logic here to handle adding contacts
+              // Navigate to the AddContact page
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => AddContact()),
+              );
             },
           ),
           IconButton(

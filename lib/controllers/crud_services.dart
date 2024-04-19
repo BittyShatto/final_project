@@ -19,55 +19,22 @@ class CRUDService {
     }
   }
 
-  // // read documents inside firestore
-  // Stream<QuerySnapshot> getContacts({String? searchQuery}) async* {
-  //   var contactsQuery = FirebaseFirestore.instance
-  //       .collection("users")
-  //       .doc(user!.uid)
-  //       .collection("contacts")
-  //       .orderBy("name");
+  // read documents inside firestore
+  Stream<QuerySnapshot> getContacts({String? searchQuery}) async* {
+    var contactsQuery = FirebaseFirestore.instance
+        .collection("users")
+        .doc(user!.uid)
+        .collection("contacts")
+        .orderBy("name");
 
-  //   // a filter to perform search
-  //   if (searchQuery != null && searchQuery.isEmpty) {
-  //     String searchEnd = searchQuery + "\uf8ff";
-  //     contactsQuery = contactsQuery.where("name",
-  //         isGreaterThanOrEqualTo: searchQuery, isLessThan: searchEnd);
-  //   }
+    // a filter to perform search
+    if (searchQuery != null && searchQuery.isEmpty) {
+      String searchEnd = searchQuery + "\uf8ff";
+      contactsQuery = contactsQuery.where("name",
+          isGreaterThanOrEqualTo: searchQuery, isLessThan: searchEnd);
+    }
 
-  //   var contacts = contactsQuery.snapshots();
-  //   yield* contacts;
-  // }
-
-  // update documents inside firestore
-  // Future updateContact(
-  //     String name, String phone, String email, String docID) async {
-  //   Map<String, dynamic> data = {"name": name, "email": email, "phone": phone};
-  //   try {
-  //     await FirebaseFirestore.instance
-  //         .collection("users")
-  //         .doc(user!.uid)
-  //         .collection("contacts")
-  //         .doc(docID)
-  //         .update(data);
-  //     print("Document Updated");
-  //   } catch (e) {
-  //     print(e.toString());
-  //   }
-  // }
-
-  // delete contact from firestore
-  // Future deleteContact(String docID) async {
-  //   try {
-  //     await FirebaseFirestore.instance
-  //         .collection("users")
-  //         .doc(user!.uid)
-  //         .collection("contacts")
-  //         .doc(docID)
-  //         .delete();
-
-  //     print("Contact Deleted");
-  //   } catch (e) {
-  //     print(e.toString());
-  //   }
-  // }
+    var contacts = contactsQuery.snapshots();
+    yield* contacts;
+  }
 }
