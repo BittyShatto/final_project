@@ -1,8 +1,4 @@
-import 'dart:ui';
-
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:final_project/controllers/auth_services.dart';
-import 'package:final_project/controllers/crud_services.dart';
 import 'package:final_project/views/add_contact_page.dart';
 import 'package:final_project/views/contactdetails_page.dart';
 import 'package:final_project/views/whatsapp.dart';
@@ -107,6 +103,22 @@ class _MyContactsPageState extends State<MyContactsPage> {
         contacts = _contacts;
         contactsFiltered = _contacts;
       });
+    }
+  }
+
+  Future<void> checkContactsPermission() async {
+    PermissionStatus status = await Permission.contacts.status;
+    if (status.isGranted) {
+      // Permission is granted, proceed with accessing contacts
+      print('Contacts permission is granted');
+      // Call the function to fetch contacts or perform other actions
+    } else if (status.isDenied ||
+        status.isRestricted ||
+        status.isPermanentlyDenied) {
+      // Permission is denied, show a message or request permission
+      print('Contacts permission is denied');
+      // You can show a dialog or request permission again
+      await Permission.contacts.request();
     }
   }
 
