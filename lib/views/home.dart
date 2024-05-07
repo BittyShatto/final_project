@@ -1,5 +1,4 @@
 import 'package:final_project/controllers/auth_services.dart';
-import 'package:final_project/views/add_contact_page.dart';
 import 'package:final_project/views/contactdetails_page.dart';
 import 'package:final_project/views/whatsapp.dart';
 import 'package:flutter/material.dart';
@@ -80,6 +79,7 @@ class _MyContactsPageState extends State<MyContactsPage> {
   List<Contact> contacts = [];
   List<Contact> contactsFiltered = [];
   TextEditingController _searchController = TextEditingController();
+  bool isLoading = true;
 
   @override
   void initState() {
@@ -92,33 +92,27 @@ class _MyContactsPageState extends State<MyContactsPage> {
     if (!isGranted) {
       PermissionStatus status = await Permission.contacts.request();
       if (status.isDenied || status.isPermanentlyDenied) {
-        // Handle denied permission, e.g., show a message or navigate to settings
+        // Handle denied permission
+        // Show a message or navigate to settings
         return;
       }
       isGranted = status.isGranted;
     }
     if (isGranted) {
-      List<Contact> _contacts = (await ContactsService.getContacts()).toList();
-      setState(() {
-        contacts = _contacts;
-        contactsFiltered = _contacts;
-      });
-    }
-  }
-
-  Future<void> checkContactsPermission() async {
-    PermissionStatus status = await Permission.contacts.status;
-    if (status.isGranted) {
-      // Permission is granted, proceed with accessing contacts
-      print('Contacts permission is granted');
-      // Call the function to fetch contacts or perform other actions
-    } else if (status.isDenied ||
-        status.isRestricted ||
-        status.isPermanentlyDenied) {
-      // Permission is denied, show a message or request permission
-      print('Contacts permission is denied');
-      // You can show a dialog or request permission again
-      await Permission.contacts.request();
+      List<Contact> _contacts = await ContactsService.getContacts();
+      if (_contacts.isNotEmpty) {
+        setState(() {
+          contacts = _contacts;
+          contactsFiltered = _contacts;
+          isLoading = false;
+        });
+      } else {
+        // Handle empty contact list
+        // Show a message to inform the user
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 
@@ -127,26 +121,32 @@ class _MyContactsPageState extends State<MyContactsPage> {
     bool isSearching = _searchController.text.isNotEmpty;
     return Scaffold(
       appBar: AppBar(
-        title: Text('Flutter Contacts'),
+        title: Text('Contacts'),
         actions: [
           IconButton(
-            icon:
-                Icon(Icons.person_add), // Use the Icons.add for adding contacts
-            onPressed: () {
-              // Implement adding contacts functionality
-              // Navigate to the AddContact page
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => AddContact()),
-              );
+            icon: Icon(Icons.person_add),
+            onPressed: () async {
+              try {
+                Contact contact = await ContactsService.openContactForm();
+                if (contact == null) {
+                  getContacts();
+                }
+              } on FormOperationException catch (e) {
+                switch (e.errorCode) {
+                  case FormOperationErrorCode.FORM_OPERATION_CANCELED:
+                  case FormOperationErrorCode.FORM_COULD_NOT_BE_OPEN:
+                  case FormOperationErrorCode.FORM_OPERATION_UNKNOWN_ERROR:
+                    print(e.toString());
+                  case null:
+                  // TODO: Handle this case.
+                }
+              }
             },
           ),
           IconButton(
             icon: Icon(Icons.history),
             onPressed: () async {
-              // Implement call logs functionality
               try {
-                // Example: Open the default phone dialer app
                 String url = 'tel:';
                 if (await canLaunch(url)) {
                   await launch(url);
@@ -187,9 +187,18 @@ class _MyContactsPageState extends State<MyContactsPage> {
                 ),
               ),
             ),
-            Expanded(
-              child: buildContactList(isSearching),
-            ),
+            if (isLoading)
+              CircularProgressIndicator()
+            else if (contactsFiltered.isEmpty)
+              Expanded(
+                child: Center(
+                  child: Text("No contacts found."),
+                ),
+              )
+            else
+              Expanded(
+                child: buildContactList(isSearching),
+              ),
           ],
         ),
       ),
@@ -197,33 +206,29 @@ class _MyContactsPageState extends State<MyContactsPage> {
   }
 
   Widget buildContactList(bool isSearching) {
+    final List<Contact> displayedContacts =
+        isSearching ? contactsFiltered : contacts;
+
     return ListView.builder(
-      shrinkWrap: true,
-      itemCount: isSearching ? contactsFiltered.length : contacts.length,
+      itemCount: displayedContacts.length,
       itemBuilder: (context, index) {
-        Contact contact =
-            isSearching ? contactsFiltered[index] : contacts[index];
+        Contact contact = displayedContacts[index];
         return GestureDetector(
           child: Padding(
-            padding: EdgeInsets.symmetric(
-                horizontal: 5), // Adjust the horizontal padding as needed
+            padding: EdgeInsets.symmetric(horizontal: 5),
             child: ExpansionTile(
               title: ListTile(
                 title: Text(
                   contact.displayName ?? 'No Name',
-                  maxLines:
-                      1, // Set maxLines to 1 to ensure the name is displayed on a single line
-                  overflow:
-                      TextOverflow.ellipsis, // Handle overflow with ellipsis
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 subtitle: Text(
                   contact.phones?.isNotEmpty == true
                       ? contact.phones!.first.value ?? 'No Phone'
                       : 'No Phone',
-                  maxLines:
-                      1, // Set maxLines to 1 to ensure the phone number is displayed on a single line
-                  overflow:
-                      TextOverflow.ellipsis, // Handle overflow with ellipsis
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 leading: (contact.avatar != null && contact.avatar!.isNotEmpty)
                     ? CircleAvatar(
@@ -232,7 +237,7 @@ class _MyContactsPageState extends State<MyContactsPage> {
                     : CircleAvatar(
                         child: Text(contact.initials()),
                       ),
-                contentPadding: EdgeInsets.zero, // Remove default padding
+                contentPadding: EdgeInsets.zero,
               ),
               children: [
                 Row(
@@ -243,7 +248,6 @@ class _MyContactsPageState extends State<MyContactsPage> {
                       child: IconButton(
                         icon: Icon(Icons.sms),
                         onPressed: () {
-                          // Handle SMS button press
                           launch(
                               'sms:${contact.phones!.first.value}?body=Hello');
                         },
@@ -253,7 +257,6 @@ class _MyContactsPageState extends State<MyContactsPage> {
                       child: IconButton(
                         icon: Icon(Icons.call),
                         onPressed: () async {
-                          // Handle call button press
                           String telurl = "tel:${contact.phones!.first.value}";
                           if (await canLaunchUrlString(telurl)) {
                             launchUrlString(telurl);
@@ -270,15 +273,12 @@ class _MyContactsPageState extends State<MyContactsPage> {
                           size: 24,
                         ),
                         onPressed: () {
-                          // Display the MessageDialog as a dialog box
                           showDialog(
                             context: context,
                             builder: (BuildContext context) {
                               return MessageDialog(
                                 onSendMessage: (message) {
-                                  // Handle sending the message
-                                  openWhatsApp(context,
-                                      message); // Call openWhatsApp function here
+                                  openWhatsApp(context, message);
                                 },
                               );
                             },
@@ -290,7 +290,6 @@ class _MyContactsPageState extends State<MyContactsPage> {
                       child: IconButton(
                         icon: Icon(Icons.info),
                         onPressed: () {
-                          // Navigate to ContactDetailsPage
                           Navigator.push(
                             context,
                             MaterialPageRoute(
