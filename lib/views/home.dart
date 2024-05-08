@@ -1,12 +1,13 @@
+import 'package:contacts_service/contacts_service.dart';
 import 'package:final_project/controllers/auth_services.dart';
-import 'package:final_project/views/contactdetails_page.dart';
-import 'package:final_project/views/whatsapp.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:contacts_service/contacts_service.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:url_launcher/url_launcher_string.dart';
+
+import 'contactdetails_page.dart';
+import 'whatsapp.dart';
 
 void main() {
   runApp(MyApp());
@@ -76,6 +77,8 @@ class MyContactsPage extends StatefulWidget {
 }
 
 class _MyContactsPageState extends State<MyContactsPage> {
+  RefreshController refreshController = RefreshController(initialRefresh: true);
+
   List<Contact> contacts = [];
   List<Contact> contactsFiltered = [];
   TextEditingController _searchController = TextEditingController();
@@ -105,12 +108,14 @@ class _MyContactsPageState extends State<MyContactsPage> {
           contacts = _contacts;
           contactsFiltered = _contacts;
           isLoading = false;
+          refreshController.refreshCompleted();
         });
       } else {
         // Handle empty contact list
         // Show a message to inform the user
         setState(() {
           isLoading = false;
+          refreshController.refreshCompleted();
         });
       }
     }
@@ -137,8 +142,9 @@ class _MyContactsPageState extends State<MyContactsPage> {
                   case FormOperationErrorCode.FORM_COULD_NOT_BE_OPEN:
                   case FormOperationErrorCode.FORM_OPERATION_UNKNOWN_ERROR:
                     print(e.toString());
-                  case null:
-                  // TODO: Handle this case.
+                    break;
+                  default:
+                  // Handle other cases if needed
                 }
               }
             },
@@ -160,46 +166,50 @@ class _MyContactsPageState extends State<MyContactsPage> {
           ),
         ],
       ),
-      drawer: MyDrawer(logoutCallback: () {
-        FirebaseAuth.instance.signOut();
-      }),
-      body: Container(
-        padding: EdgeInsets.all(20),
-        child: Column(
-          children: <Widget>[
-            Container(
-              child: TextField(
-                controller: _searchController,
-                onChanged: (value) {
-                  filterContacts(value);
-                },
-                decoration: InputDecoration(
-                  labelText: 'Search',
-                  border: OutlineInputBorder(
-                    borderSide: BorderSide(
+      body: SmartRefresher(
+        controller: refreshController,
+        header: WaterDropMaterialHeader(
+          backgroundColor: Colors.black,
+        ),
+        onRefresh: () => getContacts(),
+        child: Container(
+          padding: EdgeInsets.all(20),
+          child: Column(
+            children: <Widget>[
+              Container(
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (value) {
+                    filterContacts(value);
+                  },
+                  decoration: InputDecoration(
+                    labelText: 'Search',
+                    border: OutlineInputBorder(
+                      borderSide: BorderSide(
+                        color: Theme.of(context).primaryColor,
+                      ),
+                    ),
+                    prefixIcon: Icon(
+                      Icons.search,
                       color: Theme.of(context).primaryColor,
                     ),
                   ),
-                  prefixIcon: Icon(
-                    Icons.search,
-                    color: Theme.of(context).primaryColor,
+                ),
+              ),
+              if (isLoading)
+                CircularProgressIndicator()
+              else if (contactsFiltered.isEmpty)
+                Expanded(
+                  child: Center(
+                    child: Text("No contacts found."),
                   ),
+                )
+              else
+                Expanded(
+                  child: buildContactList(isSearching),
                 ),
-              ),
-            ),
-            if (isLoading)
-              CircularProgressIndicator()
-            else if (contactsFiltered.isEmpty)
-              Expanded(
-                child: Center(
-                  child: Text("No contacts found."),
-                ),
-              )
-            else
-              Expanded(
-                child: buildContactList(isSearching),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -258,8 +268,8 @@ class _MyContactsPageState extends State<MyContactsPage> {
                         icon: Icon(Icons.call),
                         onPressed: () async {
                           String telurl = "tel:${contact.phones!.first.value}";
-                          if (await canLaunchUrlString(telurl)) {
-                            launchUrlString(telurl);
+                          if (await canLaunch(telurl)) {
+                            launch(telurl);
                           } else {
                             print("Can't launch $telurl");
                           }
